@@ -1,5 +1,12 @@
 package com.example.simplecamerax;
 
+import android.annotation.SuppressLint;
+import android.content.ContentValues;
+import android.os.Bundle;
+import android.provider.MediaStore;
+import android.widget.Button;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
@@ -13,25 +20,10 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
-import android.annotation.SuppressLint;
-import android.content.ContentResolver;
-import android.content.ContentValues;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.view.View;
-import android.widget.Button;
-import android.widget.Toast;
-
 import com.google.common.util.concurrent.ListenableFuture;
 
-import java.io.File;
-import java.util.Date;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-
-import static android.provider.MediaStore.MediaColumns.MIME_TYPE;
 
 public class MainActivity extends AppCompatActivity implements ImageAnalysis.Analyzer {
 
@@ -59,18 +51,18 @@ public class MainActivity extends AppCompatActivity implements ImageAnalysis.Ana
 
         //Button
         Button button1 = findViewById(R.id.button1);
-        button1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                capturePhoto();
-            }
-        });
+        button1.setOnClickListener(view -> capturePhoto());
     }
 
 
     //Screen display
     Executor getExecutor() {
         return ContextCompat.getMainExecutor(this);
+    }
+
+    @Override
+    public void analyze(@NonNull ImageProxy image) {
+        image.close();
     }
 
     @SuppressLint("RestrictedApi")
@@ -97,33 +89,17 @@ public class MainActivity extends AppCompatActivity implements ImageAnalysis.Ana
         cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview, imageCapture);
     }
 
-    @Override
-    public void analyze(@NonNull ImageProxy image) {
-        image.close();
-    }
-
     //Save image
     private void capturePhoto() {
-
-        File photoDir;
-        int apiInt = Build.VERSION.SDK_INT;
-        if (apiInt <= 29) {
-            final String SAVE_DIR = "/DCIM/CameraX";
-            photoDir = new File(Environment.getExternalStorageDirectory().getPath() + SAVE_DIR);
-        } else {
-            photoDir = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES) + "/");
-        }
-        if (!photoDir.exists())
-            photoDir.mkdir();
-
-        Date date = new Date();
-        String timestamp = String.valueOf(date.getTime());
-        String photoFilePath = photoDir.getAbsolutePath() + "/" + timestamp + ".jpg";
-        File photoFile = new File(photoFilePath);
-        String AttachName = photoFilePath;
+        long timestamp = System.currentTimeMillis();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, timestamp);
+        contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg");
 
         imageCapture.takePicture(
-                new ImageCapture.OutputFileOptions.Builder(photoFile).build(),
+                new ImageCapture.OutputFileOptions.Builder(getContentResolver(),
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        contentValues).build(),
                 getExecutor(),
                 new ImageCapture.OnImageSavedCallback() {
                     @Override
@@ -137,11 +113,5 @@ public class MainActivity extends AppCompatActivity implements ImageAnalysis.Ana
                     }
                 }
         );
-        ContentValues values = new ContentValues();
-        ContentResolver contentResolver = getContentResolver();
-        values.put(MIME_TYPE, "image/jpeg");
-        values.put(MediaStore.Images.Media.TITLE, photoFilePath);
-        values.put("_data", AttachName);
-        contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
     }
 }

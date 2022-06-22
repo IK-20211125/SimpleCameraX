@@ -6,7 +6,8 @@
     <uses-feature android:name="android.hardware.camera" />
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <!--add-->
 
@@ -17,9 +18,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SimpleCameraX">
+        <!--add-->
         <activity
             android:name=".MainActivity"
+            android:exported="true"
             android:screenOrientation="landscape">
+        <!--add-->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
